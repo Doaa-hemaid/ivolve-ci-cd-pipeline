@@ -69,6 +69,7 @@ pipeline {
             steps {
                 script {
                     // Set OpenShift environment and deploy the Docker image
+                    withCredentials([string(credentialsId: 'OPENSHIFT_TOKEN_ID', variable: 'OPENSHIFT_TOKEN')]) {
                     sh """
                     oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
                     oc project $OPENSHIFT_PROJECT
@@ -77,7 +78,7 @@ pipeline {
                     
                     oc rollout status deployment.apps/my-app
                 """
-                    }
+                    }}
                 }
             }
         }
