@@ -3,9 +3,12 @@ pipeline {
 
     environment {
         // Set environment variables
-        REGISTRY = 'your-docker-registry' // Replace with your Docker registry URL
-        IMAGE_NAME = 'your-image-name'     // Replace with the name of your Docker image
-        OPENSHIFT_PROJECT = 'your-openshift-project' // Replace with your OpenShift project
+        DOCKER_IMAGE_BASE = 'doaahemaid01/my-app'
+        IMAGE_TAG = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
+        DOCKER_IMAGE = "${DOCKER_IMAGE_BASE}:${IMAGE_TAG}"
+        OPENSHIFT_TOKEN = credentials('open-shift-token') 
+        OPENSHIFT_SERVER = 'https://api.ocp-training.ivolve-test.com:6443' 
+        OPENSHIFT_PROJECT = 'doaahemaid' 
     }
 
     stages {
@@ -45,7 +48,7 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image
-                    sh "docker build -t ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} ."
+                    sh "docker build -t ${DOCKER_IMAGE} . "
                 }
             }
         }
@@ -56,7 +59,7 @@ pipeline {
                     // Login to Docker registry and push the image
                     withCredentials([usernamePassword(credentialsId: 'docker-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin ${REGISTRY}"
-                        sh "docker push ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_IMAGE}"
                     }
                 }
             }
@@ -66,10 +69,14 @@ pipeline {
             steps {
                 script {
                     // Set OpenShift environment and deploy the Docker image
-                    withCredentials([usernamePassword(credentialsId: 'openshift-credentials-id', usernameVariable: 'OC_USERNAME', passwordVariable: 'OC_PASSWORD')]) {
-                        sh 'oc login --username=$OC_USERNAME --password=$OC_PASSWORD --insecure-skip-tls-verify'
-                        sh "oc project ${OPENSHIFT_PROJECT}"
-                        sh "oc new-app ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} --name ${IMAGE_NAME}"
+                    sh """
+                    oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+                    oc project $OPENSHIFT_PROJECT
+
+                    oc create deployment my-app --image=${DOCKER_IMAGE}
+                    
+                    oc rollout status deployment.apps/my-app
+                """
                     }
                 }
             }
@@ -81,6 +88,7 @@ pipeline {
             // Clean up, log out from Docker and OpenShift
             sh 'docker logout'
             sh 'oc logout'
+            sh 'docker rmi ${DOCKER_IMAGE} || true'
         }
         success {
             echo 'Pipeline succeeded!'
