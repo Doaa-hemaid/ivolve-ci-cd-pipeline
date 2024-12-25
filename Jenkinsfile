@@ -37,7 +37,7 @@ pipeline {
             steps {
                 script {
                     // Run SonarQube analysis
-                    withSonarQubeEnv() {
+                    withSonarQubeEnv('sounarqube') {
                         sh './gradlew sonar'
                     }
                 }
