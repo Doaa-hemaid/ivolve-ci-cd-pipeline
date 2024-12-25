@@ -6,7 +6,7 @@ pipeline {
         DOCKER_IMAGE_BASE = 'doaahemaid01/my-app'
         IMAGE_TAG = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
         DOCKER_IMAGE = "${DOCKER_IMAGE_BASE}:${IMAGE_TAG}"
-        OPENSHIFT_TOKEN = credentials('open-shift-token') 
+        OPENSHIFT_TOKEN = credentials('openshift-token') 
         OPENSHIFT_SERVER = 'https://api.ocp-training.ivolve-test.com:6443' 
         OPENSHIFT_PROJECT = 'doaahemaid' 
     }
@@ -57,7 +57,7 @@ pipeline {
             steps {
                 script {
                     // Login to Docker registry and push the image
-                    withCredentials([usernamePassword(credentialsId: 'docker-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin ${REGISTRY}"
                         sh "docker push ${DOCKER_IMAGE}"
                     }
