@@ -6,7 +6,6 @@ pipeline {
         DOCKER_IMAGE_BASE = 'doaahemaid01/my-app'
         IMAGE_TAG = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
         DOCKER_IMAGE = "${DOCKER_IMAGE_BASE}:${IMAGE_TAG}"
-        OPENSHIFT_TOKEN = credentials('openshift-token') 
         OPENSHIFT_SERVER = 'https://api.ocp-training.ivolve-test.com:6443' 
         OPENSHIFT_PROJECT = 'doaahemaid' 
     }
@@ -69,7 +68,7 @@ pipeline {
             steps {
                 script {
                     // Set OpenShift environment and deploy the Docker image
-                    withCredentials([string(credentialsId: 'OPENSHIFT_TOKEN_ID', variable: 'OPENSHIFT_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'openshift-token', variable: 'OPENSHIFT_TOKEN')]) {
                     sh """
                     oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
                     oc project $OPENSHIFT_PROJECT
