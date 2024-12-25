@@ -58,7 +58,7 @@ pipeline {
                 script {
                     // Login to Docker registry and push the image
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin ${REGISTRY}"
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin "
                         sh "docker push ${DOCKER_IMAGE}"
                     }
                 }
