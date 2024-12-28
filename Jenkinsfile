@@ -27,17 +27,17 @@ pipeline {
                 }
             }
         }
-        stage('Build') {
-            steps {
-                script {
-                    cleanAndBuild()
-                }
-            }
-        }
         stage('Test') {
             steps {
                 script {
                     runUnitTests()
+                }
+            }
+        }
+         stage('Build') {
+            steps {
+                script {
+                    cleanAndBuild()
                 }
             }
         }
