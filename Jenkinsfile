@@ -1,5 +1,6 @@
+@Library('shared-library@main') _
 pipeline {
-    agent any
+     agent { label 'ivolve' }
 
     environment {
         // Set environment variables
@@ -8,6 +9,7 @@ pipeline {
         DOCKER_IMAGE = "${DOCKER_IMAGE_BASE}:${IMAGE_TAG}"
         OPENSHIFT_SERVER = 'https://api.ocp-training.ivolve-test.com:6443' 
         OPENSHIFT_PROJECT = 'doaahemaid' 
+        SONAR_ENV = 'sounarqube'
     }
 
     stages {
@@ -17,69 +19,51 @@ pipeline {
             }
         }
 
-        stage('Unit Test and Build JAR') {
+         stages {
+        stage('Initialize') {
             steps {
                 script {
-                    // Give execute permissions to gradlew
-                    sh 'chmod +x gradlew'
-                    
-                    // Clean and Build the project
-                    sh './gradlew clean build'
-                    
-                    // Run unit tests
-                    sh './gradlew test'
+                    makeGradlewExecutable()
                 }
             }
         }
-
+        stage('Build') {
+            steps {
+                script {
+                    cleanAndBuild()
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                script {
+                    runUnitTests()
+                }
+            }
+        }
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Run SonarQube analysis
-                    withSonarQubeEnv('sounarqube') {
-                        sh './gradlew sonar'
-                    }
+                    runSonarQubeAnalysis(SONAR_ENV)
                 }
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image
-                    sh "docker build -t ${DOCKER_IMAGE} . "
+                  dockerBuildAndPush(DOCKER_IMAGE,'docker-hub-credentials')
                 }
             }
         }
 
-        stage('Push Docker Image to Registry') {
-            steps {
-                script {
-                    // Login to Docker registry and push the image
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin "
-                        sh "docker push ${DOCKER_IMAGE}"
-                    }
-                }
-            }
-        }
-
+       
         stage('Deploy to OpenShift') {
             steps {
                 script {
-                    // Set OpenShift environment and deploy the Docker image
-                   withCredentials([usernamePassword(credentialsId: 'openshift-credentials', usernameVariable: 'OPENSHIFT_USER', passwordVariable: 'OPENSHIFT_PASSWORD')]) {
-                sh '''
-                    # Log in to OpenShift with username and password
-                    oc login ${OPENSHIFT_SERVER} --username=${OPENSHIFT_USER} --password=${OPENSHIFT_PASSWORD} --insecure-skip-tls-verify
-                    
-                    # Switch to the target project
-                    oc project ${OPENSHIFT_PROJECT}
-
-                    # Create a deployment
-                    oc create deployment my-app --image=${DOCKER_IMAGE}
-                '''
-                    }}
+                    deployToOpenShift(OPENSHIFT_SERVER, OPENSHIFT_PROJECT, DOCKER_IMAGE, 'openshift-credentials')
+                   
+                    }
+            }
                 }
             }
         }
