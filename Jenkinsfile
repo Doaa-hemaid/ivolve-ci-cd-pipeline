@@ -1,6 +1,6 @@
 @Library('shared-library@main') _
 pipeline {
-     agent { label 'ivolve' }
+     agent { label 'ivolve-build' }
 
     environment {
         // Set environment variables
