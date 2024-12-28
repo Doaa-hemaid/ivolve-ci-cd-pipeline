@@ -19,7 +19,7 @@ pipeline {
             }
         }
 
-         stages {
+       
         stage('Initialize') {
             steps {
                 script {
@@ -55,6 +55,7 @@ pipeline {
                 }
             }
         }
+     
 
        
         stage('Deploy to OpenShift') {
@@ -65,7 +66,7 @@ pipeline {
                     }
             }
                 }
-            }
+            
         }
     
 
